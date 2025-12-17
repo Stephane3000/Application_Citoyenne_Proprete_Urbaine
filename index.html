@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cloud - Service Hyperviseur Sécurisé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'nick-primary': '#4F46E5', /* Indigo */
+                        'nick-secondary': '#818CF8', /* Light Indigo */
+                        'nick-dark': '#111827', /* Dark Gray */
+                        'nick-accent': '#EC4899', /* Pink accent */
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: #EC4899;
+            color: white;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-image-container {
+            height: 120px; 
+            overflow: hidden; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .feature-image-container img {
+            width: 100%;
+            max-height: 100%; 
+            object-fit: contain; 
+            max-width: 100%;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-64 glass-effect text-white p-6 flex flex-col overflow-y-auto hidden md:flex">
+            <div class="mb-8">
+                <h1 class="text-3xl font-extrabold cursor-pointer hover:text-nick-accent transition" onclick="showView('home')">☁️ My Cloud</h1>
+                <p class="text-sm text-gray-300 mt-2">Cloud Personnel Sécurisé</p>
+            </div>
+
+            <div id="nav-public" class="space-y-2 flex-1">
+                <nav-item id="nav-home" class="nav-item text-white hover:bg-white hover:bg-opacity-20" onclick="showView('home')">
+                    <span>🏠</span>
+                    <span>Accueil</span>
+                </nav-item>
+                <nav-item id="nav-register" class="nav-item text-white hover:bg-white hover:bg-opacity-20" onclick="showView('register')">
+                    <span>✍️</span>
+                    <span>S'inscrire</span>
+                </nav-item>
+                <nav-item id="nav-login" class="nav-item text-white hover:bg-white hover:bg-opacity-20" onclick="showView('login')">
+                    <span>🔐</span>
+                    <span>Se Connecter</span>
+                </nav-item>
+            </div>
+
+            <div id="nav-private" class="hidden border-t border-white border-opacity-20 pt-4">
+                <div class="text-white text-sm font-semibold mb-4">
+                    <span class="text-nick-accent">⭐</span> 
+                    <span id="sidebar-vm-name"></span>
+                </div>
+                <nav-item id="nav-dashboard" class="nav-item text-white hover:bg-white hover:bg-opacity-20" onclick="showView('dashboard')">
+                    <span>📊</span>
+                    <span>Tableau de Bord</span>
+                </nav-item>
+                <nav-item id="nav-files" class="nav-item text-white hover:bg-white hover:bg-opacity-20" onclick="showView('files')">
+                    <span>📁</span>
+                    <span>Mes Fichiers</span>
+                </nav-item>
+                <nav-item id="nav-search" class="nav-item text-white hover:bg-white hover:bg-opacity-20" onclick="showView('search')">
+                    <span>🔎</span>
+                    <span>Découvrir</span>
+                </nav-item>
+                <nav-item id="logout-btn" class="nav-item text-white hover:bg-red-500 hover:bg-opacity-20">
+                    <span>🚪</span>
+                    <span>Déconnexion</span>
+                </nav-item>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Header -->
+            <header class="glass-effect text-white shadow-lg">
+                <div class="flex justify-between items-center p-4 md:p-6">
+                    <div class="flex items-center gap-4">
+                        <button id="menu-toggle" class="md:hidden text-white text-2xl">☰</button>
+                        <h2 id="page-title" class="text-2xl font-bold">Bienvenue</h2>
+                    </div>
+                    <div id="header-actions" class="flex items-center gap-4">
+                        <span id="current-vm-display" class="hidden text-sm font-semibold"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Scroll Area -->
+            <main class="flex-1 overflow-y-auto p-4 md:p-8">
+                <!-- Home View -->
+                <section id="view-home" class="view-section transition duration-500 ease-in-out">
+                    <div class="max-w-6xl mx-auto">
+                        <!-- Hero Section -->
+                        <div class="grid md:grid-cols-2 gap-8 mb-12 items-center">
+                            <div class="text-white">
+                                <h1 class="text-5xl md:text-6xl font-extrabold mb-6 leading-tight">
+                                    Votre Cloud
+                                    <span class="text-nick-accent">Personnel</span>
+                                </h1>
+                                <p class="text-xl text-gray-200 mb-8">
+                                    Sécurisé, ultra-rapide et disponible 24h/7j. Créez votre infrastructure cloud en quelques secondes.
+                                </p>
+                                <div class="flex gap-4 flex-wrap">
+                                    <button onclick="showView('register')" class="btn-primary text-white px-8 py-4 rounded-lg font-bold text-lg">
+                                        Créer un Compte 🚀
+                                    </button>
+                                    <button onclick="showView('login')" class="bg-white text-nick-dark px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition">
+                                        Se Connecter 🔐
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="inline-block text-8xl opacity-80">☁️</div>
+                            </div>
+                        </div>
+
+                        <!-- Features Grid -->
+                        <div class="grid md:grid-cols-3 gap-6 mt-12">
+                            <div class="stat-card">
+                                <div class="feature-image-container mb-4">
+                                    <img src="{{ url_for('static', filename='images/securité.jfif') }}" alt="Infrastructure cloud sécurisée" />
+                                </div>
+                                <h3 class="text-2xl font-bold text-nick-dark mb-3">🔒 VM Sécurisée</h3>
+                                <p class="text-gray-600">
+                                    Chaque compte est une VM dédiée avec protections avancées et gestion d'espace privée.
+                                </p>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="feature-image-container mb-4">
+                                    <img src="{{ url_for('static', filename='images/public_privé.png') }}" alt="Diagramme de partage" />
+                                </div>
+                                <h3 class="text-2xl font-bold text-nick-dark mb-3">🔄 Partage Flexible</h3>
+                                <p class="text-gray-600">
+                                    Stockez, partagez, ou les deux. Contrôlez qui accède à vos données.
+                                </p>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="feature-image-container mb-4">
+                                    <img src="{{ url_for('static', filename='images/partage.jfif') }}" alt="Vitesse accès données" />
+                                </div>
+                                <h3 class="text-2xl font-bold text-nick-dark mb-3">⚡ Performance Temps Réel</h3>
+                                <p class="text-gray-600">
+                                    Accès aux données en temps réel avec une latence ultra-faible.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Register View -->
+                <section id="view-register" class="view-section hidden transition duration-500 ease-in-out">
+                    <div class="max-w-md mx-auto">
+                        <div class="stat-card">
+                            <div class="text-center mb-8">
+                                <div class="text-6xl mb-4">🔑</div>
+                                <h2 class="text-3xl font-bold text-nick-dark mb-2">Créer un Compte</h2>
+                                <p class="text-gray-600 text-sm">Démarrez votre cloud personnel en moins de 2 minutes</p>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Nom de Compte / VM</label>
+                                    <input type="text" id="reg-vm-name" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                    <input type="email" id="reg-vm-email" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mot de Passe</label>
+                                    <input type="password" id="reg-vm-password" placeholder="Minimum 8 caractères" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Stockage (MB)</label>
+                                    <input type="number" id="reg-vm-storage" value="500" min="100" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                </div>
+                                
+                                <button id="register-btn" class="btn-primary text-white p-3 rounded-lg w-full font-bold text-lg mt-6">
+                                    Créer mon Compte Cloud
+                                </button>
+                                <p id="reg-message" class="text-sm text-center"></p>
+                                <p class="text-center text-gray-600 text-sm mt-4">
+                                    Vous avez un compte ? 
+                                    <a href="#" class="text-nick-primary font-bold hover:underline" onclick="showView('login')">Connectez-vous</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Login View -->
+                <section id="view-login" class="view-section hidden transition duration-500 ease-in-out">
+                    <div class="max-w-md mx-auto">
+                        <div class="stat-card">
+                            <div class="text-center mb-8">
+                                <div class="text-6xl mb-4">🔐</div>
+                                <h2 class="text-3xl font-bold text-nick-dark mb-2">Accéder à ma VM</h2>
+                                <p class="text-gray-600 text-sm">Connectez-vous à votre cloud personnel</p>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Nom de Compte / VM</label>
+                                    <input type="text" id="login-vm-name" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Mot de Passe</label>
+                                    <input type="password" id="login-vm-password" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                </div>
+                                
+                                <button id="login-btn" class="btn-primary text-white p-3 rounded-lg w-full font-bold text-lg mt-6">
+                                    Accéder à ma VM
+                                </button>
+                                <p id="login-message" class="text-sm text-center"></p>
+                                <p class="text-center text-gray-600 text-sm mt-4">
+                                    Pas de compte ? 
+                                    <a href="#" class="text-nick-primary font-bold hover:underline" onclick="showView('register')">Créez-en un</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Dashboard View -->
+                <section id="view-dashboard" class="view-section hidden transition duration-500 ease-in-out">
+                    <div class="max-w-6xl mx-auto">
+                        <!-- Stats Overview -->
+                        <div class="grid md:grid-cols-3 gap-6 mb-8">
+                            <div class="stat-card">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p class="text-gray-600 text-sm font-medium">Stockage Utilisé</p>
+                                        <p id="storage-used-value" class="text-3xl font-bold text-nick-dark mt-2">0 MB</p>
+                                    </div>
+                                    <span class="text-3xl">💾</span>
+                                </div>
+                                <div class="bg-gray-200 rounded-full h-2 mt-4">
+                                    <div id="storage-bar-progress" class="h-2 rounded-full bg-nick-primary transition-all duration-500" style="width: 0%;"></div>
+                                </div>
+                                <p id="storage-bar-text" class="text-xs text-gray-600 mt-2">0 MB / 0 MB</p>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p class="text-gray-600 text-sm font-medium">Fichiers Stockés</p>
+                                        <p id="files-count" class="text-3xl font-bold text-nick-dark mt-2">0</p>
+                                    </div>
+                                    <span class="text-3xl">📁</span>
+                                </div>
+                                <p class="text-xs text-gray-600 mt-4">Fichiers privés</p>
+                            </div>
+
+                            <div class="stat-card">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p class="text-gray-600 text-sm font-medium">Fichiers Partagés</p>
+                                        <p id="shared-count" class="text-3xl font-bold text-nick-dark mt-2">0</p>
+                                    </div>
+                                    <span class="text-3xl">🔗</span>
+                                </div>
+                                <p class="text-xs text-gray-600 mt-4">Fichiers publics</p>
+                            </div>
+                        </div>
+
+                        <!-- Upload Section -->
+                        <div class="stat-card mb-8">
+                            <h3 class="text-2xl font-bold text-nick-dark mb-6">📤 Importer & Gérer</h3>
+                            <div class="grid md:grid-cols-4 gap-4 items-end">
+                                <div class="col-span-4 md:col-span-2">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Sélectionner un fichier</label>
+                                    <input type="file" id="dashboard-file-input" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                </div>
+                                <div class="col-span-4 md:col-span-1">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Partage</label>
+                                    <select id="share-option" class="p-3 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                        <option value="store_only">Privé</option>
+                                        <option value="share_only">Public</option>
+                                        <option value="store_and_share">Privé + Public</option>
+                                    </select>
+                                </div>
+                                <button id="dashboard-upload-btn" class="btn-primary text-white p-3 rounded-lg font-bold col-span-4 md:col-span-1">
+                                    Importer
+                                </button>
+                            </div>
+                            <p id="dashboard-upload-message" class="mt-4 text-sm"></p>
+                        </div>
+
+                        <!-- Files Display -->
+                        <div class="stat-card">
+                            <h3 class="text-2xl font-bold text-nick-dark mb-4">💾 Vos Fichiers Privés</h3>
+                            <div id="vm-files-list" class="space-y-2 max-h-80 overflow-y-auto">
+                                <li class="text-gray-500" id="no-files-msg">Aucun fichier stocké pour le moment...</li>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Files View -->
+                <section id="view-files" class="view-section hidden transition duration-500 ease-in-out">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="stat-card">
+                            <h3 class="text-2xl font-bold text-nick-dark mb-6">📁 Mes Fichiers Personnels</h3>
+                            <div id="files-grid" class="grid md:grid-cols-2 gap-4">
+                                <div class="text-gray-500 text-center py-8">Chargement des fichiers...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Search View -->
+                <section id="view-search" class="view-section hidden transition duration-500 ease-in-out">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="stat-card mb-8">
+                            <h3 class="text-2xl font-bold text-nick-dark mb-6">🔎 Découvrir les Fichiers Publics</h3>
+                            <div class="flex gap-4">
+                                <input type="text" id="request-file-name" placeholder="Rechercher un fichier..." class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nick-primary focus:border-transparent transition">
+                                <button id="request-file-btn" class="btn-primary text-white px-6 rounded-lg font-bold">
+                                    Rechercher
+                                </button>
+                            </div>
+                            <p id="request-file-message" class="mt-4 text-sm"></p>
+                        </div>
+
+                        <div class="stat-card">
+                            <h3 class="text-2xl font-bold text-nick-dark mb-6">📋 Résultats de Recherche</h3>
+                            <div id="search-results" class="grid md:grid-cols-2 gap-4">
+                                <div class="text-gray-500 text-center py-8">Effectuez une recherche pour découvrir des fichiers publics...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+    
+    <script>
+        // Page title updates based on view
+        function updatePageTitle(title) {
+            document.getElementById('page-title').textContent = title;
+        }
+
+        // Mobile menu toggle
+        document.getElementById('menu-toggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        });
+
+        // Original showView function should remain in main.js
+        // Just add title updates here
+        const originalShowView = window.showView;
+        window.showView = function(view) {
+            originalShowView(view);
+            const titles = {
+                'home': 'Bienvenue sur My Cloud',
+                'register': 'Créer un Compte',
+                'login': 'Se Connecter',
+                'dashboard': 'Tableau de Bord',
+                'files': 'Mes Fichiers',
+                'search': 'Découvrir les Fichiers'
+            };
+            updatePageTitle(titles[view] || 'My Cloud');
+        };
+    </script>
+</body>
+</html>
